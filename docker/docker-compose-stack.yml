@@ -1,0 +1,219 @@
+# A scalable version of the application
+# Requires:
+# - Docker V1.13+ for Swarm integration
+# Local deploy using docker-build-local-stack.sh
+# AWS deploy using docker-build-aws-stack.sh
+version: "3"
+services:
+  # Do not sample the Network Mapper node(s) - they are not typical nodes
+  example-network-mapper:
+    image: docker-hub-user/example-service:version-1
+    environment:
+      # Corda execution mode - Determine how the node is configured to locate other nodes
+      - CORDA_EXEC_MODE=Swarm
+      # Corda URL - the URL of the Corda node providing the network map
+      - CORDA_URL=http://example-network-mapper:20003
+      # Corda base port - the base port to run the Corda node (e.g. 20000)
+      - CORDA_BASE_PORT=20000
+      # Corda mode - the type of node CentralBank/Trader/Robot
+      - CORDA_MODE=NetworkMapper
+      # Corda city - the legal name of the city node for network map referencing
+      - CORDA_CITY=network-mapper
+      # Corda city address - the host name of the node
+      - CORDA_CITY_ADDRESS=example-network-mapper
+    networks:
+      - corda
+    # Provide much more memory for the network mapper node since it will be subject to a lot of traffic
+    command: java -Xmx2048m -ea -javaagent:quasar-0.7.6-dev.jar -Dco.paralleluniverse.fibers.verifyInstrumentation=false -jar example-service.jar
+    depends_on:
+      # Link to Meteor to ensure it starts early and can observe network growth
+      - swift-netting-meteor
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 2048M
+  # Do not sample the Central Bank node(s) - they are not typical nodes
+  example-service-1:
+    image: docker-hub-user/example-service:version-1
+    environment:
+      # Corda execution mode - Determine how the node is configured to locate other nodes
+      - CORDA_EXEC_MODE=Swarm
+      # Corda URL - the URL of the Corda node providing the network map
+      - CORDA_URL=http://example-network-mapper:20003
+      # Corda base port - the base port to run the Corda node (e.g. 20000)
+      - CORDA_BASE_PORT=20000
+      # Corda mode - the type of node CentralBank/Trader/Robot
+      - CORDA_MODE=CentralBank
+      # Corda city - the legal name of the city node for network map referencing
+      - CORDA_CITY=Brussels
+      # Corda city address - the host name of the node
+      - CORDA_CITY_ADDRESS=example-service-1
+    networks:
+      - corda
+    # Provide much more memory for the Central Bank and notarising node since it will be subject to a lot of traffic
+    command: java -Xmx2048m -ea -javaagent:quasar-0.7.6-dev.jar -Dco.paralleluniverse.fibers.verifyInstrumentation=false -jar example-service.jar
+    depends_on:
+      # Link to Meteor to ensure it starts early and can observe network growth
+      - swift-netting-meteor
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 2048M
+  # {START_CORDA_NODE_SAMPLE} Do not delete this line - it used by the SwarmComposer for scaling
+  example-service-2:
+    image: docker-hub-user/example-service:version-1
+    environment:
+      # Corda execution mode - Determine how the node is configured to locate other nodes
+      - CORDA_EXEC_MODE=Swarm
+      # Corda URL - the URL of the Corda node providing the network map
+      - CORDA_URL=http://example-network-mapper:20003
+      # Corda base port - the base port to run the Corda node (e.g. 20000)
+      - CORDA_BASE_PORT=20000
+      # Corda mode - the type of node CentralBank/Trader/Robot
+      - CORDA_MODE=Trader
+      # Corda city - the legal name of the city node for network map referencing
+      - CORDA_CITY=London
+      # Corda city address - the host name of the node
+      - CORDA_CITY_ADDRESS=example-service-2
+    depends_on:
+      - example-network-mapper
+    networks:
+      - corda
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+  # {END_CORDA_NODE_SAMPLE} Do not delete this line - it used by the SwarmComposer for scaling
+  example-service-3:
+    image: docker-hub-user/example-service:version-1
+    environment:
+      # Corda execution mode - Determine how the node is configured to locate other nodes
+      - CORDA_EXEC_MODE=Swarm
+      # Corda URL - the URL of the Corda node providing the network map
+      - CORDA_URL=http://example-network-mapper:20003
+      # Corda base port - the base port to run the Corda node (e.g. 20000)
+      - CORDA_BASE_PORT=20000
+      # Corda mode - the type of node CentralBank/Trader/Robot
+      - CORDA_MODE=Trader
+      # Corda city - the legal name of the city node for network map referencing
+      - CORDA_CITY=Paris
+      # Corda city address - the host name of the node
+      - CORDA_CITY_ADDRESS=example-service-3
+    depends_on:
+      - example-network-mapper
+    networks:
+      - corda
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  # Start Meteor front end (demonstrates labelling for 'proxy' service)
+  swift-netting-meteor:
+    image: docker-hub-user/example-meteor:version-1
+    ports:
+      - "3000"
+    environment:
+      # Use Docker's virtual networking support to reference "db" container
+      - MONGO_URL=mongodb://example-mongo:27017
+      # Public host to use when exposing the service
+      - ROOT_URL=http://${MANAGER_IP}
+      # Corda URL - the URL of the Corda node providing the network map
+      - CORDA_URL=http://example-network-mapper:20003
+    depends_on:
+      # Link to MongoDB (must be running before Meteor front end starts)
+      - example-mongo
+      # Link to proxy
+      - proxy
+    networks:
+      - corda
+      - proxy
+    deploy:
+      labels:
+        - com.df.notify=true
+        - com.df.distribute=true
+        # /meteor API
+        - com.df.port=3000
+        - com.df.servicePath=/
+#        - com.df.reqPathSearch=/app/meteor/
+#        - com.df.reqPathReplace=/
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+  # MongoDB image with host name "example-mongo"
+  example-mongo:
+    image: mongo:3.0.14
+    ports:
+     # Standard MongoDB is 27017 so we keep this internal
+      - "27017"
+    command: "-smallfiles -nojournal"
+    networks:
+      - corda
+      - proxy
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  # Proxy support URL rewriting
+  proxy:
+    image: vfarcic/docker-flow-proxy
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - proxy
+    environment:
+      - LISTENER_ADDRESS=swarm-listener
+      - MODE=swarm
+    deploy:
+      replicas: 1
+  # Swarm listener to keep proxy informed of reorganisations in services
+  swarm-listener:
+    image: vfarcic/docker-flow-swarm-listener
+    networks:
+      - proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DF_NOTIFY_CREATE_SERVICE_URL=http://proxy:8080/v1/docker-flow-proxy/reconfigure
+      - DF_NOTIFY_REMOVE_SERVICE_URL=http://proxy:8080/v1/docker-flow-proxy/remove
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+networks:
+  corda:
+    external: false
+    ipam:
+      driver: default
+      config:
+        # /19 allows up to 8190 addresses
+        # See http://droptips.com/cidr-subnet-masks-and-usable-ip-addresses-quick-reference-guide-cheat-sheet
+        - subnet: 10.0.0.0/19
+  proxy:
+    external: false

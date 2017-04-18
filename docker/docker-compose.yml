@@ -1,0 +1,50 @@
+# Use version 3 to force upgrade of local docker-compose (use brew install/upgrade)
+# Shell executing 'docker-compose up' must have DEFAULT_IP set as environment variable
+# DOCKER_IP=$(docker-machine ip default)
+version: "3"
+services:
+  example-service-1:
+    image: docker-hub-user/example-service:version-1
+    # Ensure an image is built if necessary
+    build: .
+    environment:
+      # Corda URL - the URL of the Corda node providing the network map
+      - CORDA_URL=http://example-service-1:20013
+      # Corda base port - the base port to run the Corda node (e.g. 20000)
+      - CORDA_BASE_PORT=20010
+      # Corda mode - the type of node CentralBank/Trader/Robot
+      - CORDA_MODE=CentralBank
+      # Corda city - the legal name of the city node for network map referencing
+      - CORDA_CITY=Brussels
+      # Corda city address - the host name of the node
+      - CORDA_CITY_ADDRESS=example-service-1
+  example-service-2:
+    image: docker-hub-user/example-service:version-1
+    environment:
+      # Corda URL - the URL of the Corda node providing the network map
+      - CORDA_URL=http://example-service-1:20013
+      # Corda base port - the base port to run the Corda node (e.g. 20000)
+      - CORDA_BASE_PORT=20020
+      # Corda mode - the type of node CentralBank/Trader/Robot
+      - CORDA_MODE=Trader
+      # Corda city - the legal name of the city node for network map referencing
+      - CORDA_CITY=London
+      # Corda city address - the host name of the node
+      - CORDA_CITY_ADDRESS=example-service-2
+    depends_on:
+      - example-service-1
+  example-service-3:
+    image: docker-hub-user/example-service:version-1
+    environment:
+      # Corda URL - the URL of the Corda node providing the network map
+      - CORDA_URL=http://example-service-1:20013
+      # Corda base port - the base port to run the Corda node (e.g. 20000)
+      - CORDA_BASE_PORT=20030
+      # Corda mode - the type of node CentralBank/Trader/Robot
+      - CORDA_MODE=Trader
+      # Corda city - the legal name of the city node for network map referencing
+      - CORDA_CITY=Paris
+      # Corda city address - the host name of the node
+      - CORDA_CITY_ADDRESS=example-service-3
+    depends_on:
+      - example-service-1
