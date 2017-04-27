@@ -1,6 +1,6 @@
-```
-docker-compose up &
-```
+# Docker compose
+
+Docker Compose builds your complete network consisting of multiple linked containers.
 
 The `Dockerfile` exposes the application ports, and `docker-compose.yml` provides a mapping
 between the host machine (your EC2 instance) and the running Docker container so that, say, 
@@ -9,6 +9,14 @@ in your browser.
 
 The `docker-compose.yml` also contains information for tagging your images to make them easier to
 push to an upstream repository (such as Docker Hub).
+
+### Start you containers
+
+To start your network use `up` command.
+```
+docker-compose up &
+```
+
 
 ### Stop your containers
 
