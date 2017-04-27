@@ -3,30 +3,30 @@
 Docker provides an easy way to create lightweight virtual machines called containers. It is a vast subject area, with many 
 nuances for different build platforms.
 
-We collect some backgrkound information about Docker [here](Background.md).
-
-
 ## Prerequisits
 
 - Docker installed on local or remote machine(s)
 
-Additional
 
 # Content 
 
 - Dockerfile - instruction to build your own flavour of Corda docker
-- compose - example of Corda network create with Docker Compose
-- swarm - example of Corda network create with Docker Swarm
-- scripts - additional scripts
+- compose - directory with an example of Corda network create with Docker Compose
+- swarm - directory with an example of Corda network create with Docker Swarm
+- scripts - directory additional scripts
 
 
 ## Build the Docker image
 
-Each project comes with its own `./docker-build.sh` that will clean and build the image. Just run
+In the _scripts_ directory there  is thr `./docker-build.sh` script that will clean and build the image. Just run
 it to create your Docker image appropriately tagged. If you need to make your own, just copy what's
 already there and modify.
 
 # Further Reading
+
+## Background 
+
+We collect some backgrkound information about Docker [here](Background.md).
 
 ## Docker Compose
 
